@@ -1,0 +1,33 @@
+name: Deploy to AWS Lightsail
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to Lightsail
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          # Install the AWS CLI
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+          # Zip your website files
+          zip -r website.zip .
+
+          # Upload the zip file to your Lightsail instance
+          aws lightsail create-bucket --bucket-name my-bucket --region us-west-2
+          aws lightsail upload-object --bucket-name my-bucket --object-key website.zip --file website.zip
+
+          # SSH into your Lightsail instance and deploy the files
+          ssh -i /path/to/your/lightsail/key.pem ubuntu@your-lightsail-ip "aws s3 cp s3://my-bucket/website.zip /var/www/html/ && unzip /var/www/html/website.zip -d /var/www/html/"
